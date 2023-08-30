@@ -11,6 +11,7 @@ Some manual edits to the 3 files will be necessary to get your desired result, b
 git clone https://github.com/jlobue10/Chia_stuff
 cd Chia_stuff
 # Make edits to timer and service before installing in /etc/systemd/system
+# Make edits to Chia_plot_auromate.sh and copy to desired location for service to run. For me this was in $HOME/.local/chia
 sudo cp {bladebit_check_and_plot.timer,bladebit_check_and_plot.service} /etc/systemd/system
 sudo systemctl daemon-reload
 sudo systemctl enable --now bladebit_check_and_plot.timer
