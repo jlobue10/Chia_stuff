@@ -1,0 +1,10 @@
+[Unit]
+Description=Run My Plot check and create script Every 5 Minutes
+
+[Timer]
+# Run the associated service every 5 minutes to check if a new plot is needed to fill staging dir
+OnCalendar=*:0/5
+Unit=bladebit_check_and_plot.service
+
+[Install]
+WantedBy=timers.target
