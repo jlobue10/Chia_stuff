@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for available space and plot if there's room
+
+[Service]
+Type=oneshot
+# Update username. My plotter user is chia02-remote. Copy bash script to desired location and chmod +x it
+# Make sure the following line points to your version of the bash script to run
+ExecStart=/bin/bash -c '/home/chia02-remote/.local/chia/Chia_plot_automate.sh'
+
+[Install]
+WantedBy=default.target
