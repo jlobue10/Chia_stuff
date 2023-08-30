@@ -1,5 +1,5 @@
 # Chia_stuff
-Helpful automation stuff for Chia plot creation
+Helpful automation stuff for Chia plot creation. Fill up a staging directory with new `bladebit_cuda` plots as room frees up.
 
 ## **Installation**
 
