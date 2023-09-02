@@ -52,7 +52,7 @@ ONE_PER_DRIVE = True
 SLEEP_FOR = 60 * 3
 SLEEP_FOR_LONG = 60 * 20
 
-RSYNC_CMD = "rsync"https://github.com/jlobue10/Chia_stuff/blob/main/Chia_plot_automate.sh
+RSYNC_CMD = "rsync"
 
 if SHUFFLE:
     random.shuffle(DESTS)
