@@ -1,5 +1,14 @@
 #!/usr/bin/bash
 
+# Check if Bladebit CUDA is already running
+pgrep bladebit_cuda
+BLADEBIT_STATUS=$?
+
+if [[ $BLADEBIT_STATUS == 0 ]]; then
+	echo -e "\nBladebit CUDA is already running... try again later.\n"
+	exit 1
+fi
+
 # Change C0 to C7 for C1 to C7
 # Uncomment and comment out as necessary for desired C level
 #COMPRESS_LEVEL=C0
@@ -71,7 +80,9 @@ fi
 
 AVAIL_PLOT_SPACE=`df "$PLOT_DIR" | awk 'END{print $4}'`
 if [[ $AVAIL_PLOT_SPACE -ge reqSpace ]]; then
-    /usr/bin/env PATH=/$HOME/chia-blockchain/venv/bin:$PATH bladebit_cuda -f $FARMER_KEY -c $CONTRACT_ADDR -n 1 --compress $COMPRESS_VALUE cudaplot $PLOT_DIR
+    NUM_PLOTS=$((AVAIL_PLOT_SPACE / reqSpace))
+    echo -e "\nBladebit CUDA is creating $NUM_PLOTS $COMPRESS_LEVEL plots."
+    /usr/bin/env PATH=/$HOME/chia-blockchain/venv/bin:$PATH bladebit_cuda -f $FARMER_KEY -c $CONTRACT_ADDR -n $NUM_PLOTS --compress $COMPRESS_VALUE cudaplot $PLOT_DIR
     # ^ assuming that user has cloned repo to their $HOME dir and done the install steps following clone
     # Fix Python venv location as necessary. Replace $HOME with /home/user as necessary
     exit 0
