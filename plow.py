@@ -42,11 +42,11 @@ BWLIMIT = None
 IONICE = "-c 2 -n 0"  # "-c 3" for "idle"
 
 # Only send 1 plot at a time, regardless of source/dest. 
-ONE_AT_A_TIME = True
+ONE_AT_A_TIME = False
 
 # Each plot source can have a lock, so we don't send more than one file from
 # that origin at any given time.
-ONE_PER_DRIVE = True
+ONE_PER_DRIVE = False
 
 # Short & long sleep durations upon various error conditions
 SLEEP_FOR = 60 * 3
