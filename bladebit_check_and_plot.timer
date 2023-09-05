@@ -3,7 +3,7 @@ Description=Run My Plot check and create script Every 3 Minutes
 
 [Timer]
 # Run the associated service every 3 minutes to check if a new plot is needed to fill staging dir
-OnCalendar=*:0/5
+OnCalendar=*:0/3
 Unit=bladebit_check_and_plot.service
 
 [Install]
