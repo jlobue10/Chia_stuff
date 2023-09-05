@@ -1,0 +1,20 @@
+[Unit]
+Description="Chia Harvester"
+Wants=network-online.target
+After=network.target network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=forking
+Restart=always
+RestartSec=1
+User=chia02-remote
+Group=chia02-remote
+Nice=-5
+IOSchedulingClass=best-effort
+IOSchedulingPriority=0
+ExecStart=/usr/bin/env PATH=/home/chia02-remote/chia-blockchain/venv/bin:$PATH chia start harvester -r
+ExecStop=/usr/bin/env PATH=/home/chia02-remote/chia-blockchain/venv/bin:$PATH chia stop all -d
+
+[Install]
+WantedBy=multi-user.target
