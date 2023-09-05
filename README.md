@@ -19,4 +19,11 @@ sudo systemctl status bladebit_check_and_plot.timer
 # should see that timer enabled and active
 ```
 
+## **Updates**
+
+I've added my version of the modified plow (all credit goes to original author, Luke Macken) which is deleting one older (than 90 days, can be changed in the code) plot before replacing with a new (compressed) plot. Edit as necessary and execute with `python3.9 plow.py`. You may need to install `python3.9` as an `altinstall` for your system. Newer versions of Python had some issues with the script and it's not worth re-writing (to me at least) when `python3.9` works just fine with it.
+
+I've also added an example Chia harvesting service to be used with Linux as a `systemd` service. Edit as necessary and use if you like.
+I have a Windows PowerShell harvesting and status script that I set task scheduler to launch every Windows boot. I will share this later, when I have time, for those who'd be interested in it.
+
 Feel free to ask questions as necessary. There are more [elegant solutions](https://github.com/graemes/mownplow) out there, but documentation can be somewhat lacking if you're not experienced in Python, so I came up with this more 'crude' `bash` and `systemd` solution.
