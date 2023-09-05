@@ -29,6 +29,6 @@ You may need to install `python3.9` as an `altinstall` for your system. Newer ve
 
 I've also added an example Chia harvesting service to be used with Linux as a `systemd` service. Edit as necessary and use if you like.
 
-I also have a Windows PowerShell harvesting and status script that I set task scheduler to launch every Windows boot. I will share this later, when I have time, for those who'd be interested in it.
+I have a Windows PowerShell harvesting and status script that I set task scheduler to launch every Windows boot. I will share this later, when I have time, for those who'd be interested in it.
 
 Feel free to ask questions as necessary. There are more [elegant solutions](https://github.com/graemes/mownplow) out there, but documentation can be somewhat lacking if you're not experienced in Python, so I came up with this more 'crude' `bash` and `systemd` solution.
