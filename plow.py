@@ -60,9 +60,9 @@ if SHUFFLE:
 
 # Rsync parameters. For FAT/NTFS you may need to remove --preallocate
 if BWLIMIT:
-    RSYNC_FLAGS = f"--remove-source-files --preallocate --whole-file --bwlimit={BWLIMIT}"
+    RSYNC_FLAGS = f"--remove-source-files --whole-file --bwlimit={BWLIMIT}"
 else:
-    RSYNC_FLAGS = "--remove-source-files --preallocate --whole-file"
+    RSYNC_FLAGS = "--remove-source-files --whole-file"
 
 if IONICE:
     RSYNC_CMD = f"ionice {IONICE} {RSYNC_CMD}"
