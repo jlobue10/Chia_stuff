@@ -53,6 +53,7 @@ SLEEP_FOR = 60 * 3
 SLEEP_FOR_LONG = 60 * 20
 
 RSYNC_CMD = "rsync"
+days_threshold = 90  # Delete one plot file older than 90 days
 
 if SHUFFLE:
     random.shuffle(DESTS)
@@ -121,7 +122,6 @@ async def plotwatcher(paths, plot_queue, loop):
 
 
 async def plow(dest, plot_queue, loop):
-    days_threshold = 90  # Delete one plot file older than 90 days
     print(f"🧑‍🌾 plowing to {dest}")
     while True:
         try:
