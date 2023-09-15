@@ -135,7 +135,7 @@ async def plow(dest, plot_queue, loop):
             dest_path = Path(dest)
             if dest_path.exists():
 
-                plot_size = plot.stat().st_size
+                plot_size = os.path.getsize(plot)
                 dest_free = shutil.disk_usage(dest).free
                 if dest_free < plot_size:
                     await delete_file_older_than(dest, days_threshold)
