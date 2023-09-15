@@ -59,7 +59,7 @@ if SHUFFLE:
 
 # Rsync parameters. For FAT/NTFS you may need to remove --preallocate
 if BWLIMIT:
-    RSYNC_FLAGS = f"--remove-source-files --whole-file --bwlimit={BWLIMIT}"
+    RSYNC_FLAGS = f"--remove-source-files --whole-file --progress --bwlimit={BWLIMIT}"
 else:
     RSYNC_FLAGS = "--remove-source-files --whole-file --progress"
 
