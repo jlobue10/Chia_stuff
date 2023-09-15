@@ -14,7 +14,6 @@ import shutil
 import random
 import urllib.request
 import asyncio
-import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -26,9 +25,10 @@ SOURCES = ["/mnt/Chia_RAID0/Chia_plots/"]
 
 # Rsync destinations
 # Examples: ["/mnt/HDD1", "192.168.1.10::hdd1"]
-# DESTS = ["/mnt/Chia_JBOD2_001/Chia_plots"]
+# DESTS = ["/mnt/Chia_JBOD2_001/Chia_plots", "/mnt/Chia_JBOD2_002/Chia_plots"]
 
-DESTS = ["/mnt/Chia_JBOD2_002/Chia_plots", "/mnt/Chia_JBOD2_003/Chia_plots", "/mnt/Chia_JBOD2_004/Chia_plots", "/mnt/Chia_JBOD2_005/Chia_plots"]
+DESTS = ["/mnt/Chia_JBOD2_018/Chia_plots", "/mnt/Chia_JBOD2_019/Chia_plots", "/mnt/Chia_JBOD2_020/Chia_plots", "/mnt/Chia_JBOD2_021/Chia_plots"]
+# DESTS = ["/mnt/Chia_JBOD2_008/Chia_plots"]
 
 # Shuffle plot destinations. Useful when using many plotters to decrease the odds
 # of them copying to the same drive simultaneously.
@@ -61,7 +61,7 @@ if SHUFFLE:
 if BWLIMIT:
     RSYNC_FLAGS = f"--remove-source-files --whole-file --bwlimit={BWLIMIT}"
 else:
-    RSYNC_FLAGS = "--remove-source-files --whole-file"
+    RSYNC_FLAGS = "--remove-source-files --whole-file --progress"
 
 if IONICE:
     RSYNC_CMD = f"ionice {IONICE} {RSYNC_CMD}"
@@ -91,7 +91,8 @@ async def delete_file_older_than(directory, days):
                 print(f"Error deleting {file_path}: {e}")
                 return
 
-async def plotfinder(paths, plot_queue):
+
+async def plotfinder(paths, plot_queue, loop):
     for path in paths:
         for plot in Path(path).glob("**/*.plot"):
             await plot_queue.put(plot)
@@ -180,19 +181,19 @@ async def plow(dest, plot_queue, loop):
         except Exception as e:
             print(f"! {e}")
 
-
 async def main(paths, loop):
     plot_queue = asyncio.Queue()
+    futures = []
 
-    async with asyncio.TaskGroup() as plot_task_group:
-        # Add plots to queue
-        await plot_task_group.create_task(plotfinder(paths, plot_queue, loop))
-      
+    # Add plots to queue
+    futures.append(plotfinder(paths, plot_queue, loop))
+
     # Fire up a worker for each plow
     for dest in DESTS:
-        await plot_task_group.create_task(plow(dest, plot_queue, loop))
-      
+        futures.append(plow(dest, plot_queue, loop))
+
     print('🌱 Plow running...')
+    await asyncio.gather(*futures)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
