@@ -53,6 +53,7 @@ SLEEP_FOR_LONG = 60 * 20
 
 RSYNC_CMD = "rsync"
 days_threshold = 90  # Delete one plot file older than 90 days
+processed_files = set()
 
 if SHUFFLE:
     random.shuffle(DESTS)
@@ -99,7 +100,6 @@ async def plotfinder(paths, plot_queue, loop):
 
 async def watch_directory(paths, plot_queue):
     # Create a set to keep track of processed files
-    processed_files = set()
     for path in paths:
         if not Path(path).exists():
             print(f'! Path does not exist: {path}')
@@ -182,6 +182,7 @@ async def plow(dest, plot_queue, loop):
 
             if proc.returncode == 0:
                 print(f"🏁 {cmd} ({finish - start})")
+                processed_files.remove(plot)
             elif proc.returncode == 10:  # Error in socket I/O
                 # Retry later.
                 print(f"⁉️ {cmd!r} exited with {proc.returncode} (error in socket I/O)")
