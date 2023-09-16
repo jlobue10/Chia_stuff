@@ -182,7 +182,6 @@ async def plow(dest, plot_queue, loop):
 
             if proc.returncode == 0:
                 print(f"🏁 {cmd} ({finish - start})")
-                processed_files.remove(plot)
             elif proc.returncode == 10:  # Error in socket I/O
                 # Retry later.
                 print(f"⁉️ {cmd!r} exited with {proc.returncode} (error in socket I/O)")
