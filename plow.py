@@ -14,7 +14,6 @@ import shutil
 import random
 import urllib.request
 import asyncio
-import aionotify
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -26,9 +25,9 @@ SOURCES = ["/mnt/Chia_RAID0/Chia_plots/"]
 
 # Rsync destinations
 # Examples: ["/mnt/HDD1", "192.168.1.10::hdd1"]
-# DESTS = ["/mnt/Chia_JBOD2_001/Chia_plots", "/mnt/Chia_JBOD2_002/Chia_plots", "/mnt/Chia_JBOD2_003/Chia_plots", "/mnt/Chia_JBOD2_004/Chia_plots", "/mnt/Chia_JBOD2_005/Chia_plots", "/mnt/Chia_JBOD2_006/Chia_plots", "/mnt/Chia_JBOD2_007/Chia_plots", "/mnt/Chia_JBOD2_008/Chia_plots", "/mnt/Chia_JBOD2_009/Chia_plots", "/mnt/Chia_JBOD2_010/Chia_plots", "/mnt/Chia_JBOD2_011/Chia_plots", "/mnt/Chia_JBOD2_012/Chia_plots", "/mnt/Chia_JBOD2_013/Chia_plots", "/mnt/Chia_JBOD2_014/Chia_plots", "/mnt/Chia_JBOD2_015/Chia_plots", "/mnt/Chia_JBOD2_016/Chia_plots", "/mnt/Chia_JBOD2_017/Chia_plots", "/mnt/Chia_JBOD2_018/Chia_plots", "/mnt/Chia_JBOD2_019/Chia_plots", "/mnt/Chia_JBOD2_020/Chia_plots", "/mnt/Chia_JBOD2_021/Chia_plots", "/mnt/Chia_JBOD2_022/Chia_plots", "/mnt/Chia_JBOD2_023/Chia_plots", "/mnt/Chia_JBOD2_024/Chia_plots"]
+# DESTS = ["/mnt/Chia_JBOD2_001/Chia_plots", "/mnt/Chia_JBOD2_002/Chia_plots"]
 
-DESTS = ["/mnt/Chia_JBOD2_002/Chia_plots", "/mnt/Chia_JBOD2_003/Chia_plots", "/mnt/Chia_JBOD2_004/Chia_plots", "/mnt/Chia_JBOD2_005/Chia_plots"]
+DESTS = ["/mnt/Chia_JBOD2_018/Chia_plots", "/mnt/Chia_JBOD2_019/Chia_plots", "/mnt/Chia_JBOD2_020/Chia_plots", "/mnt/Chia_JBOD2_021/Chia_plots"]
 # DESTS = ["/mnt/Chia_JBOD2_008/Chia_plots"]
 
 # Shuffle plot destinations. Useful when using many plotters to decrease the odds
@@ -54,16 +53,16 @@ SLEEP_FOR_LONG = 60 * 20
 
 RSYNC_CMD = "rsync"
 days_threshold = 90  # Delete one plot file older than 90 days
+processed_files = set()
 
 if SHUFFLE:
     random.shuffle(DESTS)
-
 
 # Rsync parameters. For FAT/NTFS you may need to remove --preallocate
 if BWLIMIT:
     RSYNC_FLAGS = f"--remove-source-files --whole-file --bwlimit={BWLIMIT}"
 else:
-    RSYNC_FLAGS = "--remove-source-files --whole-file"
+    RSYNC_FLAGS = "--remove-source-files --whole-file --progress"
 
 if IONICE:
     RSYNC_CMD = f"ionice {IONICE} {RSYNC_CMD}"
@@ -93,33 +92,37 @@ async def delete_file_older_than(directory, days):
                 print(f"Error deleting {file_path}: {e}")
                 return
 
-
 async def plotfinder(paths, plot_queue, loop):
     for path in paths:
         for plot in Path(path).glob("**/*.plot"):
             await plot_queue.put(plot)
-    await plotwatcher(paths, plot_queue, loop)
+        await watch_directory(paths, plot_queue)
 
-
-async def plotwatcher(paths, plot_queue, loop):
-    watcher = aionotify.Watcher()
+async def watch_directory(paths, plot_queue):
+    # Create a set to keep track of processed files
     for path in paths:
         if not Path(path).exists():
             print(f'! Path does not exist: {path}')
             continue
-        print('watching', path)
-        watcher.watch(
-            alias=path,
-            path=path,
-            flags=aionotify.Flags.MOVED_TO,
-        )
-    await watcher.setup(loop)
-    while True:
-        event = await watcher.get_event()
-        if event.name.endswith(".plot"):
-            plot_path = Path(event.alias) / event.name
-            await plot_queue.put(plot_path)
+        while True:
+            try:
+                # List all files in the directory
+                files = os.listdir(path)
 
+                for file in files:
+                    if file.endswith(".plot"):
+                        file_path = os.path.join(path, file)
+
+                    # Check if the file is new and not processed
+                    if file_path not in processed_files:
+                        # Add the new file to the queue
+                        await plot_queue.put(file_path)
+                        processed_files.add(file_path)
+                        print(f"Added {file} to the plot queue")
+
+                await asyncio.sleep(60)  # Check for new files every 60 seconds
+            except Exception as e:
+                print(f"Error: {e}")
 
 async def plow(dest, plot_queue, loop):
     print(f"🧑‍🌾 plowing to {dest}")
@@ -132,7 +135,7 @@ async def plow(dest, plot_queue, loop):
             dest_path = Path(dest)
             if dest_path.exists():
 
-                plot_size = plot.stat().st_size
+                plot_size = os.path.getsize(plot)
                 dest_free = shutil.disk_usage(dest).free
                 if dest_free < plot_size:
                     await delete_file_older_than(dest, days_threshold)
@@ -205,7 +208,6 @@ async def plow(dest, plot_queue, loop):
         except Exception as e:
             print(f"! {e}")
 
-
 async def main(paths, loop):
     plot_queue = asyncio.Queue()
     futures = []
@@ -219,7 +221,6 @@ async def main(paths, loop):
 
     print('🌱 Plow running...')
     await asyncio.gather(*futures)
-
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
