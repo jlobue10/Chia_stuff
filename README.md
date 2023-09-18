@@ -21,11 +21,7 @@ sudo systemctl status bladebit_check_and_plot.timer
 
 ## **Updates**
 
-I've added my version of the modified plow (all credit goes to original author, Luke Macken) which is deleting one older (than 90 days, can be changed in the code) plot before replacing with a new (compressed) plot. Edit as necessary and execute with 
-```
-python3.9 plow.py
-```
-You may need to install `python3.9` as an `altinstall` for your system. Newer versions of Python had some issues with the script and it's not worth re-writing (to me at least) when `python3.9` works just fine with it.
+I've added my version of the modified plow (all credit goes to original author, Luke Macken) which is deleting one older (than 90 days, can be changed in the code) plot before replacing with a new (compressed) plot. Edit as necessary and run with `python plow.py` . The script is now compatible with Python 3.11+ and has had many improvements made to it by serfriz.
 
 I've also added an example Chia harvesting service to be used with Linux as a `systemd` service. Edit as necessary and use if you like.
 
