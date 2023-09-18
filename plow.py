@@ -24,11 +24,9 @@ from collections import defaultdict
 SOURCES = ["/mnt/Chia_RAID0/Chia_plots/"]
 
 # Rsync destinations
-# Examples: ["/mnt/HDD1", "192.168.1.10::hdd1"]
-# DESTS = ["/mnt/Chia_JBOD2_001/Chia_plots", "/mnt/Chia_JBOD2_002/Chia_plots"]
-
+# Examples: 
+#   DESTS = ["/mnt/HDD1", "/mnt/HDD2", "192.168.1.10::hdd1"]
 DESTS = ["/mnt/Chia_JBOD2_018/Chia_plots", "/mnt/Chia_JBOD2_019/Chia_plots", "/mnt/Chia_JBOD2_020/Chia_plots", "/mnt/Chia_JBOD2_021/Chia_plots"]
-# DESTS = ["/mnt/Chia_JBOD2_008/Chia_plots"]
 
 # Shuffle plot destinations. Useful when using many plotters to decrease the odds
 # of them copying to the same drive simultaneously.
@@ -47,12 +45,18 @@ ONE_AT_A_TIME = False
 # that origin at any given time.
 ONE_PER_DRIVE = False
 
+# Delete only plots older than this number of days
+DAYS_THRESHOLD = 90  
+
+# Keep this many times the plot size free on the destination drive as buffer
+# to minimize file fragmentation and improve performance.
+FREE_SPACE_MULTIPLIER = 3
+
 # Short & long sleep durations upon various error conditions
 SLEEP_FOR = 60 * 3
 SLEEP_FOR_LONG = 60 * 20
 
 RSYNC_CMD = "rsync"
-days_threshold = 90  # Delete one plot file older than 90 days
 processed_files = set()
 
 if SHUFFLE:
@@ -70,27 +74,40 @@ if IONICE:
 LOCK = asyncio.Lock()  # Global ONE_AT_A_TIME lock
 SRC_LOCKS = defaultdict(asyncio.Lock)  # ONE_PER_DRIVE locks
 
-async def delete_file_older_than(directory, days):
+async def delete_file_older_than(directory, days, size):
     current_time = datetime.now()
     cutoff_time = current_time - timedelta(days=days)
+    dest_free = shutil.disk_usage(directory).free
+    free_space_target = size * FREE_SPACE_MULTIPLIER
+    freed_space = 0
 
     files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
     if not files:
         print("No files found in the directory.")
-        return
+        return False
 
     for file in files:
         file_path = os.path.join(directory, file)
         modified_time = datetime.fromtimestamp(os.path.getmtime(file_path))
 
-        if modified_time < cutoff_time:
+        # Delete files that meet the age criteria until enough space is freed up
+        if modified_time < cutoff_time and (dest_free + freed_space) < free_space_target:
             try:
-                os.remove(file_path)
-                print(f"Deleted: {file_path}")
-                return
+                file_size = os.path.getsize(file_path)
+                os.remove(file_path)                    
+                freed_space += file_size
+                print(f"🔥 Slash-and-burned: {file_path}")
             except Exception as e:
                 print(f"Error deleting {file_path}: {e}")
-                return
+                return False
+    
+    dest_free += freed_space
+    print(f"🍂 Deleted {round(freed_space/(1024*1024*1024),1)} GB from {directory} [Free space: {round((dest_free)/(1024*1024*1024),1)} GB]")
+
+    if dest_free > size:
+        return True
+    else:
+        return False
 
 async def plotfinder(paths, plot_queue, loop):
     for path in paths:
@@ -118,14 +135,14 @@ async def watch_directory(paths, plot_queue):
                         # Add the new file to the queue
                         await plot_queue.put(file_path)
                         processed_files.add(file_path)
-                        print(f"Added {file} to the plot queue")
+                        print(f"🍃 Added {file} to the plot queue")
 
                 await asyncio.sleep(60)  # Check for new files every 60 seconds
             except Exception as e:
                 print(f"Error: {e}")
 
 async def plow(dest, plot_queue, loop):
-    print(f"🧑‍🌾 plowing to {dest}")
+    print(f"🧑‍🌾 Plowing to {dest}")
     while True:
         try:
             plot = await plot_queue.get()
@@ -134,13 +151,11 @@ async def plow(dest, plot_queue, loop):
             # For local copies, we can check if there is enough space.
             dest_path = Path(dest)
             if dest_path.exists():
-
                 plot_size = os.path.getsize(plot)
                 dest_free = shutil.disk_usage(dest).free
-                if dest_free < plot_size:
-                    await delete_file_older_than(dest, days_threshold)
-                    dest_free = shutil.disk_usage(dest).free
-                    if dest_free < plot_size:
+                if dest_free < (plot_size * FREE_SPACE_MULTIPLIER):
+                    dest_space_avail = await delete_file_older_than(dest, DAYS_THRESHOLD, plot_size)
+                    if dest_space_avail == False:
                         print(f"Farm {dest} is full")
                         await plot_queue.put(plot)
                         # Just quit the worker entirely for this destination.
