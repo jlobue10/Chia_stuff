@@ -52,6 +52,9 @@ DAYS_THRESHOLD = 90
 # to minimize file fragmentation and improve performance.
 FREE_SPACE_MULTIPLIER = 3
 
+# Extension of the new plot files being created
+PLOT_EXT = ".plot"
+
 # Short & long sleep durations upon various error conditions
 SLEEP_FOR = 60 * 3
 SLEEP_FOR_LONG = 60 * 20
@@ -96,7 +99,7 @@ async def delete_file_older_than(directory, days, size):
                 file_size = os.path.getsize(file_path)
                 os.remove(file_path)                    
                 freed_space += file_size
-                print(f"🔥 Slash-and-burned: {file_path}")
+                print(f"🔥 Slashed-and-burned: {file_path}")
             except Exception as e:
                 print(f"Error deleting {file_path}: {e}")
                 return False
@@ -111,7 +114,7 @@ async def delete_file_older_than(directory, days, size):
 
 async def plotfinder(paths, plot_queue, loop):
     for path in paths:
-        for plot in Path(path).glob("**/*.plot"):
+        for plot in Path(path).glob("**/*" + PLOT_EXT):
             await plot_queue.put(plot)
         await watch_directory(paths, plot_queue)
 
@@ -125,13 +128,13 @@ async def watch_directory(paths, plot_queue):
             try:
                 # List all files in the directory
                 files = os.listdir(path)
-
+                file_path = ""
                 for file in files:
-                    if file.endswith(".plot"):
+                    if file.endswith(PLOT_EXT):
                         file_path = os.path.join(path, file)
 
                     # Check if the file is new and not processed
-                    if file_path not in processed_files:
+                    if os.path.isfile(file_path) and file_path not in processed_files:
                         # Add the new file to the queue
                         await plot_queue.put(file_path)
                         processed_files.add(file_path)
