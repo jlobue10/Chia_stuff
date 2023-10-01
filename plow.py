@@ -116,6 +116,8 @@ async def plotfinder(paths, plot_queue, loop):
     for path in paths:
         for plot in Path(path).glob("**/*" + PLOT_EXT):
             await plot_queue.put(plot)
+            if plot not in processed_files:
+                processed_files.add(plot)
         await watch_directory(paths, plot_queue)
 
 async def watch_directory(paths, plot_queue):
