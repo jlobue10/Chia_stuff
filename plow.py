@@ -115,8 +115,8 @@ async def delete_file_older_than(directory, days, size):
 async def plotfinder(paths, plot_queue, loop):
     for path in paths:
         for plot in Path(path).glob("**/*" + PLOT_EXT):
-            await plot_queue.put(plot)
             if plot not in processed_files:
+                await plot_queue.put(plot)
                 processed_files.add(plot)
         await watch_directory(paths, plot_queue)
 
