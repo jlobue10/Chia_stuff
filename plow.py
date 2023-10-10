@@ -97,13 +97,13 @@ async def delete_file_older_than(directory, days, size):
         if modified_time < cutoff_time and (dest_free + freed_space) < free_space_target:
             try:
                 file_size = os.path.getsize(file_path)
-                os.remove(file_path)                    
+                os.remove(file_path)
                 freed_space += file_size
                 print(f"🔥 Slashed-and-burned: {file_path}")
             except Exception as e:
                 print(f"Error deleting {file_path}: {e}")
                 return False
-    
+
     dest_free += freed_space
     print(f"🍂 Deleted {round(freed_space/(1024*1024*1024),1)} GB from {directory} [Free space: {round((dest_free)/(1024*1024*1024),1)} GB]")
 
@@ -117,7 +117,8 @@ async def plotfinder(paths, plot_queue, loop):
         for plot in Path(path).glob("**/*" + PLOT_EXT):
             if plot not in processed_files:
                 await plot_queue.put(plot)
-                processed_files.add(plot)
+                processed_files.add(plot.as_posix())
+                print(f"🍃 Added {plot} to the plot queue")
         await watch_directory(paths, plot_queue)
 
 async def watch_directory(paths, plot_queue):
@@ -136,9 +137,9 @@ async def watch_directory(paths, plot_queue):
                         file_path = os.path.join(path, file)
 
                     # Check if the file is new and not processed
-                    if os.path.isfile(file_path) and file_path not in processed_files:
+                    if file_path and os.path.isfile(file_path) and file_path not in processed_files:
                         # Add the new file to the queue
-                        await plot_queue.put(file_path)
+                        await plot_queue.put(Path(file_path))
                         processed_files.add(file_path)
                         print(f"🍃 Added {file} to the plot queue")
 
